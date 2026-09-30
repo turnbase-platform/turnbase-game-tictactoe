@@ -3,7 +3,7 @@
   "title": "Tic-Tac-Toe",
   "shortDescription": "Three in a row wins. The classic two-player game on a 3×3 grid.",
   "version": "1.0.0",
-  "gdkApiVersion": "0.1.0",
+  "gdkApiVersion": "0.3.0",
   "runtime": "jvm",
   "backend": { "path": "backend/tictactoe.jar", "entryPoint": "io.turnbase.games.tictactoe.TicTacToeGame" },
   "frontend": { "entryPoint": "frontend/main.js" },
