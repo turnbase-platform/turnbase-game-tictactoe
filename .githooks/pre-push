@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+#
+# Local fast-fail. Enable once per clone:  git config core.hooksPath .githooks
+# CI is the gate (conventions.md §4); this runs what CI runs first and cheapest.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+fail=0
+echo "pre-push: spotless + unit tests";  ./mvnw -q verify || { echo "  fix with: ./mvnw spotless:apply" >&2; fail=1; }
+echo "pre-push: eslint + tsc + vitest";  npm run --silent lint && npm run --silent typecheck && npm run --silent test >/dev/null || fail=1
+exit $fail

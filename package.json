@@ -1,0 +1,32 @@
+{
+  "name": "turnbase-game-tictactoe-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Tic-Tac-Toe game frontend — bundled to frontend/main.js in the game bundle.",
+  "engines": { "node": ">=22.20.0" },
+  "scripts": {
+    "build": "esbuild src/main/ts/main.ts --bundle --format=esm --target=es2022 --minify --outfile=target/bundle/frontend/main.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/main/ts src/test/ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@turnbase/gdk": "file:vendor/turnbase-gdk-0.1.0.tgz"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.3.0",
+    "@vitest/coverage-v8": "4.1.11",
+    "esbuild": "0.27.7",
+    "eslint": "10.9.1",
+    "eslint-config-prettier": "10.1.8",
+    "jsdom": "29.1.1",
+    "prettier": "3.9.6",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.68.0",
+    "vitest": "4.1.11"
+  }
+}

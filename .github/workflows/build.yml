@@ -1,0 +1,66 @@
+# Build, test and package turnbase-game-tictactoe (IMP-M3-10).
+#
+# Bootstrap exception (conventions.md §5, IMP-GATE-70): turnbase-sdk has no tagged release, so this
+# checks it out and installs it, which needs TURNBASE_SDK_PAT — a fine-grained PAT, read-only on
+# Contents, scoped to turnbase-sdk. Until that secret exists in THIS repository the job fails at
+# the clone step whatever the code does. Delete the two bootstrap steps when the SDK is released.
+name: build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up GraalVM CE 21
+        uses: graalvm/setup-graalvm@v1
+        with:
+          distribution: graalvm-community
+          java-version: '21'
+          cache: maven
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Bootstrap — check out turnbase-sdk
+        uses: actions/checkout@v7
+        with:
+          repository: turnbase-platform/turnbase-sdk
+          token: ${{ secrets.TURNBASE_SDK_PAT }}
+          path: .turnbase-sdk
+
+      - name: Bootstrap — install turnbase-sdk
+        run: ./mvnw --batch-mode --no-transfer-progress -f .turnbase-sdk/pom.xml install -DskipTests
+
+      - name: Verify backend
+        run: ./mvnw --batch-mode --no-transfer-progress verify
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+      - name: Package the bundle
+        run: ./scripts/package.sh
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: bundle
+          path: target/*.zip
