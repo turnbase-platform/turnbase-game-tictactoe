@@ -4,7 +4,7 @@
 // as the seeded users alice and bob, over the platform's real REST + STOMP surfaces. Exits
 // non-zero on the first thing that does not happen. Usage:
 //   node scripts/e2e-roundtrip.mjs            # PLATFORM_URL=http://127.0.0.1:8080 by default
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import WebSocket from "ws";
 
 const GAME_ID = "2cc66e36-52e6-4144-9a10-09d09c982ce4";
@@ -81,12 +81,16 @@ class Stomp {
   subscribe(destination) {
     this.ws.send(`SUBSCRIBE\nid:${randomUUID()}\ndestination:${destination}\n\n\0`);
   }
-  send(destination, envelope) {
+  send(destination, envelope, traceparent) {
     const body = JSON.stringify(envelope);
-    this.ws.send(`SEND\ndestination:${destination}\ncontent-type:application/json\n\n${body}\0`);
+    const trace = traceparent ? `traceparent:${traceparent}\n` : "";
+    this.ws.send(
+      `SEND\ndestination:${destination}\n${trace}content-type:application/json\n\n${body}\0`,
+    );
   }
-  command(destination, type, payload) {
-    this.send(destination, { type, correlationId: randomUUID(), payload: payload ?? {} });
+  /** `traceparent` (W3C) makes the platform's span for this frame a child of the caller's trace. */
+  command(destination, type, payload, traceparent) {
+    this.send(destination, { type, correlationId: randomUUID(), payload: payload ?? {} }, traceparent);
   }
   /** Resolves with the first message (past or future) whose parsed body satisfies `predicate`. */
   waitFor(description, predicate) {
@@ -185,8 +189,14 @@ try {
     [xs, xu, 2],
   ];
   let expectedMoves = 0;
+  const traceIds = [];
   for (const [stomp, user, cell] of script) {
-    stomp.command(`/app/game.${sessionId}.action`, "SUBMIT_ACTION", { cell });
+    // One client-side trace per action (FR-TRACE-002): the root of client -> WebSocket ->
+    // Orchestration -> gRPC -> Game Host. Flag 01 = sampled, which the agent's parent-based sampler honours.
+    const traceId = randomBytes(16).toString("hex");
+    traceIds.push(traceId);
+    const traceparent = `00-${traceId}-${randomBytes(8).toString("hex")}-01`;
+    stomp.command(`/app/game.${sessionId}.action`, "SUBMIT_ACTION", { cell }, traceparent);
     expectedMoves += 1;
     const n = expectedMoves;
     await a.waitFor(
@@ -211,6 +221,37 @@ try {
     if (!entry) await new Promise((r) => setTimeout(r, 500));
   }
   if (!entry) fail("no history entry for the finished game");
+
+  step(`first action trace id: ${traceIds[0]}`);
+  // Optional: TEMPO_URL (e.g. http://tempo:3200 from inside the compose network, or a port-forward)
+  // turns on the single-trace check — one action's trace must hold spans from both services.
+  if (process.env.TEMPO_URL) {
+    const traceId = traceIds[0];
+    step(`trace ${traceId} spans client -> WebSocket -> Orchestration -> gRPC -> Game Host`);
+    let services = new Set();
+    let names = [];
+    for (let attempt = 0; attempt < 30 && !(services.has("platform") && services.has("gamehost")); attempt++) {
+      await new Promise((r) => setTimeout(r, 1000));
+      const res = await fetch(`${process.env.TEMPO_URL}/api/traces/${traceId}`);
+      if (!res.ok) continue;
+      const trace = await res.json();
+      services = new Set();
+      names = [];
+      for (const batch of trace.batches ?? []) {
+        const service = batch.resource.attributes.find((x) => x.key === "service.name")?.value.stringValue;
+        for (const scope of batch.scopeSpans) {
+          for (const span of scope.spans) {
+            services.add(service);
+            names.push(span.name);
+          }
+        }
+      }
+    }
+    if (!services.has("platform") || !services.has("gamehost")) fail(`trace ${traceId} has services ${[...services]}`);
+    if (!names.some((n) => n.startsWith("STOMP SEND"))) fail(`trace ${traceId} has no STOMP span: ${names}`);
+    if (!names.some((n) => n.includes("GameHostService/ProcessInput"))) fail(`trace ${traceId} has no ProcessInput span: ${names}`);
+    step(`spans: ${names.join(", ")}`);
+  }
 
   a.close();
   b.close();
