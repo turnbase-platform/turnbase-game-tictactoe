@@ -203,7 +203,7 @@ try {
   step("history lists the finished game");
   let entry;
   for (let attempt = 0; attempt < 20 && !entry; attempt++) {
-    const history = await api("GET", "/api/users/me/history", alice.cookie);
+    const history = await api("GET", "/api/users/alice/history", alice.cookie);
     const items = history.json?.items ?? history.json?.content ?? [];
     entry = items.find(
       (i) => JSON.stringify(i).includes(GAME_ID) || JSON.stringify(i).includes(sessionId),
