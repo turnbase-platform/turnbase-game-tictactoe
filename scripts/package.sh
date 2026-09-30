@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Assembles the game bundle (bundle-format.md §2.1) at target/<GAME_ID>.zip:
+# Assembles the game bundle (bundle-format.md §2.1) at target/seed/<GAME_ID>.zip:
 #
 #   manifest.json, INFO.md, backend/tictactoe.jar, frontend/main.js
 #
@@ -19,7 +19,8 @@ mkdir -p "$DIR/backend"
 cp manifest.json INFO.md "$DIR/"
 cp target/tictactoe.jar "$DIR/backend/tictactoe.jar"
 
-rm -f "target/$GAME_ID.zip"
+mkdir -p target/seed
+rm -f "target/seed/$GAME_ID.zip"
 # -X: no extra file attributes; manifest.json first, though only its location is fixed.
-(cd "$DIR" && zip -qrX "../$GAME_ID.zip" manifest.json INFO.md backend frontend)
-echo "target/$GAME_ID.zip"
+(cd "$DIR" && zip -qrX "../seed/$GAME_ID.zip" manifest.json INFO.md backend frontend)
+echo "target/seed/$GAME_ID.zip"

@@ -8,7 +8,7 @@ someone outside the platform team, so it is a **consumer**: its backend compiles
 ```bash
 ./mvnw verify                  # backend: Spotless, unit tests, JaCoCo ≥ 70 %
 npm ci && npm run lint && npm run typecheck && npm test && npm run build
-./scripts/package.sh           # → target/2cc66e36-52e6-4144-9a10-09d09c982ce4.zip
+./scripts/package.sh           # → target/seed/2cc66e36-52e6-4144-9a10-09d09c982ce4.zip
 ```
 
 `2cc66e36-…` is the game's fixed id: the platform's seeder takes the file-name stem as `game_id`
