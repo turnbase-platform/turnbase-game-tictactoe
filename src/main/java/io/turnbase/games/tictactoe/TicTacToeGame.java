@@ -2,6 +2,7 @@ package io.turnbase.games.tictactoe;
 
 import io.turnbase.gdk.TurnBaseGame;
 import io.turnbase.gdk.context.ActionContext;
+import io.turnbase.gdk.context.ActionDecodeException;
 import io.turnbase.gdk.context.InitContext;
 import io.turnbase.gdk.context.PlayerLeftContext;
 import io.turnbase.gdk.context.ResyncContext;
@@ -58,14 +59,18 @@ public final class TicTacToeGame implements TurnBaseGame<TicTacToeState> {
   @Override
   public ActionResult<TicTacToeState> onAction(TicTacToeState s, ActionContext ctx) {
     UUID mover = ctx.player().id();
-    int cell = ctx.action(Move.class).cell();
     if (s.over()) {
       return rejected(s, mover, "The game is over.");
     }
     if (!mover.equals(s.turn())) {
       return rejected(s, mover, "It is not your turn.");
     }
-    if (cell < 0 || cell > 8 || !TicTacToeState.EMPTY.equals(s.board().get(cell))) {
+    Integer chosen = decodeCell(ctx);
+    if (chosen == null || chosen < 0 || chosen > 8) {
+      return rejected(s, mover, "That cell is not available.");
+    }
+    int cell = chosen;
+    if (!TicTacToeState.EMPTY.equals(s.board().get(cell))) {
       return rejected(s, mover, "That cell is not available.");
     }
 
@@ -122,6 +127,16 @@ public final class TicTacToeGame implements TurnBaseGame<TicTacToeState> {
   public ViewResult onResync(TicTacToeState s, ResyncContext ctx) {
     String yourMark = ctx.viewer().map(p -> s.markOf(p.id())).orElse("");
     return ViewResult.of(GameMessage.View.of(s, yourMark));
+  }
+
+  /** The chosen cell, or {@code null} when the payload is absent, unparsable or has no cell. */
+  private static Integer decodeCell(ActionContext ctx) {
+    try {
+      Move move = ctx.action(Move.class);
+      return move == null ? null : move.cell();
+    } catch (ActionDecodeException e) {
+      return null;
+    }
   }
 
   private static ActionResult<TicTacToeState> rejected(

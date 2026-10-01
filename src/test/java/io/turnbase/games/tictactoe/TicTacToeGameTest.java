@@ -3,6 +3,7 @@ package io.turnbase.games.tictactoe;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.turnbase.gdk.context.ActionContext;
+import io.turnbase.gdk.context.ActionDecodeException;
 import io.turnbase.gdk.context.InitContext;
 import io.turnbase.gdk.context.PlayerLeftContext;
 import io.turnbase.gdk.context.PlayerLeftReason;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -128,6 +130,26 @@ class TicTacToeGameTest {
   }
 
   @Test
+  void aMalformedActionIsRefusedToTheSenderAloneAndConsumesNoTurn() {
+    var noCell = playPayload(x, () -> new Move(null)); // {}
+    var nullPayload = playPayload(x, () -> null); // null
+    var notAnInteger =
+        playPayload(
+            x,
+            () -> {
+              throw new ActionDecodeException("cannot decode action as Move"); // {"cell":"x"}
+            });
+
+    for (var result : List.of(noCell, nullPayload, notAnInteger)) {
+      assertThat(result.state()).isEqualTo(state);
+      assertThat(result.effects()).singleElement().isInstanceOf(SendToPlayerEffect.class);
+      assertThat(((SendToPlayerEffect) result.effects().get(0)).playerId()).isEqualTo(x.id());
+    }
+    assertThat(state.turn()).isEqualTo(x.id());
+    assertThat(play(x, 4).state().board().get(4)).isEqualTo("X");
+  }
+
+  @Test
   void threeInARowEndsTheGameWithTheMoverAsWinner() {
     int[] moves = {0, 3, 1, 4};
     Player[] by = {x, o, x, o};
@@ -230,6 +252,10 @@ class TicTacToeGameTest {
   }
 
   private ActionResult<TicTacToeState> play(Player who, int cell) {
+    return playPayload(who, () -> new Move(cell));
+  }
+
+  private ActionResult<TicTacToeState> playPayload(Player who, Supplier<Move> payload) {
     return game.onAction(
         state,
         new ActionContext() {
@@ -240,7 +266,7 @@ class TicTacToeGameTest {
 
           @Override
           public <A> A action(Class<A> type) {
-            return type.cast(new Move(cell));
+            return type.cast(payload.get());
           }
         });
   }
