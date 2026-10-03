@@ -18,6 +18,7 @@ import io.turnbase.gdk.model.Player;
 import io.turnbase.gdk.model.Team;
 import io.turnbase.gdk.result.ActionResult;
 import io.turnbase.serialization.GdkSerialization;
+import io.turnbase.serialization.SerializationException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -25,6 +26,8 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class TicTacToeGameTest {
 
@@ -147,6 +150,46 @@ class TicTacToeGameTest {
     }
     assertThat(state.turn()).isEqualTo(x.id());
     assertThat(play(x, 4).state().board().get(4)).isEqualTo("X");
+  }
+
+  /** Decodes through the engine's real mapper, so a coercion the mapper allows is a move. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "{\"cell\":\"4\"}",
+        "{\"cell\":\"x\"}",
+        "{\"cell\":null}",
+        "{}",
+        "{\"cell\":-1}",
+        "{\"cell\":1.5}",
+        "{\"cell\":99}",
+        "{\"cell\":true}",
+        "{\"cell\":[4]}",
+        "{\"cell\":{\"v\":4}}"
+      })
+  void aMalformedJsonCellIsRefusedAndConsumesNoTurn(String json) {
+    var result =
+        game.onAction(
+            state,
+            new ActionContext() {
+              @Override
+              public Player player() {
+                return x;
+              }
+
+              @Override
+              public <A> A action(Class<A> type) {
+                try {
+                  return serialization.readAction(json, type);
+                } catch (SerializationException e) {
+                  throw new ActionDecodeException("cannot decode action", e);
+                }
+              }
+            });
+
+    assertThat(result.state()).isEqualTo(state);
+    assertThat(result.effects()).singleElement().isInstanceOf(SendToPlayerEffect.class);
+    assertThat(state.turn()).isEqualTo(x.id());
   }
 
   @Test
