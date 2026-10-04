@@ -1,5 +1,12 @@
 import { TurnBaseClient } from "@turnbase/gdk";
-import { apply, initialModel, type GameEvent, type Model, type Move } from "./model.js";
+import {
+  apply,
+  applyResult,
+  initialModel,
+  type GameEvent,
+  type Model,
+  type Move,
+} from "./model.js";
 import { render } from "./view.js";
 
 const client = new TurnBaseClient<Move, GameEvent>();
@@ -25,8 +32,8 @@ client
     model = { ...model, message: `${player.displayName} left the game.` };
     draw();
   })
-  .onGameOver(() => {
-    model = { ...model, over: true, message: model.message };
+  .onGameOver((results) => {
+    model = applyResult(model, results);
     draw();
   })
   .start();

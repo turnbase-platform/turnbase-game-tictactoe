@@ -9,6 +9,15 @@ export type GameEvent =
   | { type: "move"; cell: number; mark: string; next: string }
   | { type: "rejected"; reason: string };
 
+/** The final result, sent with the game-over effect (backend `GameMessage.Result`). */
+export interface GameResult {
+  type: "result";
+  /** "X", "O", or "" for a draw. */
+  winnerMark: string;
+  /** "three in a row", "draw" or "forfeit". */
+  reason: string;
+}
+
 /** What the screen shows. */
 export interface Model {
   board: string[];
@@ -19,6 +28,8 @@ export interface Model {
   /** The player being addressed by this client; null for a spectator. */
   selfId: string | null;
   message: string;
+  /** Set once the game-over results arrive. */
+  result: GameResult | null;
 }
 
 export function initialModel(selfId: string | null): Model {
@@ -29,6 +40,7 @@ export function initialModel(selfId: string | null): Model {
     yourMark: "",
     selfId,
     message: "Waiting for the game…",
+    result: null,
   };
 }
 
@@ -54,6 +66,29 @@ export function apply(model: Model, event: GameEvent): Model {
   }
 }
 
+function isResult(value: unknown): value is GameResult {
+  if (typeof value !== "object" || value === null) return false;
+  const r = value as Record<string, unknown>;
+  return r.type === "result" && typeof r.winnerMark === "string" && typeof r.reason === "string";
+}
+
+/** Pure reducer for the opaque game-over payload; one that is not a `result` only ends the game. */
+export function applyResult(model: Model, results: unknown): Model {
+  return { ...model, over: true, result: isResult(results) ? results : null };
+}
+
+function resultLine(model: Model, result: GameResult): string {
+  if (result.winnerMark === "") return "Draw.";
+  const forfeit = result.reason === "forfeit";
+  if (model.yourMark === "") {
+    return forfeit
+      ? `${result.winnerMark} won — their opponent left.`
+      : `${result.winnerMark} won.`;
+  }
+  if (result.winnerMark !== model.yourMark) return "You lost.";
+  return forfeit ? "Your opponent left — you win." : "You won.";
+}
+
 /** True when this client may mark a cell right now. */
 export function canMove(model: Model, cell: number): boolean {
   return (
@@ -62,6 +97,7 @@ export function canMove(model: Model, cell: number): boolean {
 }
 
 export function statusLine(model: Model): string {
+  if (model.over && model.result !== null) return resultLine(model, model.result);
   if (model.message !== "") return model.message;
   if (model.turn === null) return "Waiting for the game…";
   if (model.over) return "Game over.";
