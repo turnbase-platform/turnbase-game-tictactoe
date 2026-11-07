@@ -17,7 +17,7 @@
 
   <name>turnbase-game-tictactoe</name>
   <description>The first official TurnBase game. A consumer of the published GDK — it depends on
-    io.turnbase:turnbase-sdk and nothing else from the platform (IMP-M3-10).</description>
+    io.github.turnbase-platform:turnbase-sdk and nothing else from the platform (IMP-M3-10).</description>
 
   <properties>
     <maven.compiler.release>21</maven.compiler.release>
@@ -48,14 +48,14 @@
       classpath, and a bundle that carries its own copy is rejected (FR-UPLOAD-005).
     -->
     <dependency>
-      <groupId>io.turnbase</groupId>
+      <groupId>io.github.turnbase-platform</groupId>
       <artifactId>turnbase-sdk</artifactId>
       <version>${turnbase-sdk.version}</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
-      <groupId>io.turnbase</groupId>
+      <groupId>io.github.turnbase-platform</groupId>
       <artifactId>turnbase-serialization</artifactId>
       <version>${turnbase-sdk.version}</version>
       <scope>test</scope>
@@ -96,8 +96,8 @@
                 </requireJavaVersion>
                 <bannedDependencies>
                   <excludes>
-                    <exclude>io.turnbase:turnbase-grpc</exclude>
-                    <exclude>io.turnbase:turnbase-game-host</exclude>
+                    <exclude>io.github.turnbase-platform:turnbase-grpc</exclude>
+                    <exclude>io.github.turnbase-platform:turnbase-game-host</exclude>
                   </excludes>
                   <searchTransitive>true</searchTransitive>
                 </bannedDependencies>

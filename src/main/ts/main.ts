@@ -1,4 +1,4 @@
-import { TurnBaseClient } from "@turnbase/gdk";
+import { TurnBaseClient } from "@turnbase-platform/gdk";
 import {
   apply,
   applyResult,
