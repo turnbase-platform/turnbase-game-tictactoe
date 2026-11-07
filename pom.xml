@@ -7,6 +7,14 @@
   <version>1.0.0</version>
   <packaging>jar</packaging>
 
+  <licenses>
+    <license>
+      <name>Apache-2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
   <name>turnbase-game-tictactoe</name>
   <description>The first official TurnBase game. A consumer of the published GDK — it depends on
     io.turnbase:turnbase-sdk and nothing else from the platform (IMP-M3-10).</description>
