@@ -17,3 +17,15 @@ mvn io.turnbase:turnbase-harness:run`.
 
 `vendor/turnbase-gdk-0.1.0.tgz` is `npm pack` of `turnbase-sdk`'s FE half — a bootstrap stand-in for
 the npm package until the SDK's first release tag exists (`conventions.md` §5).
+
+## Third-party licences
+
+What this repository distributes is audited for its dependencies' licences (allowed families:
+`docs/implementation/conventions.md` §6 *Third-party licences*). The report is generated, not committed:
+
+```bash
+./mvnw org.codehaus.mojo:license-maven-plugin:2.8.0:add-third-party -Dlicense.excludedScopes=test,provided
+# -> target/generated-sources/license/THIRD-PARTY.txt
+```
+
+The SDK is `provided`, so the backend jar carries no third-party code. The frontend: `npm run licenses` (pinned checker, `licenses.csv`, git-ignored). The bundle embeds no fonts.
