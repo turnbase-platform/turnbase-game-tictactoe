@@ -42,7 +42,6 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: turnbase-platform/turnbase-sdk
-          token: ${{ secrets.TURNBASE_SDK_PAT }}
           path: .turnbase-sdk
 
       - name: Bootstrap — install turnbase-sdk
