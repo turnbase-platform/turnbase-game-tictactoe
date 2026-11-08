@@ -21,8 +21,8 @@ npm ci && npm run lint && npm run typecheck && npm test && npm run build
 zip into the directory `turnbase.seed.bundles-dir` names to seed it into a local stack. Try it without the
 platform: `cd target/bundle && mvn io.github.turnbase-platform:turnbase-harness:run`.
 
-`vendor/turnbase-gdk-0.1.0.tgz` is `npm pack` of `turnbase-sdk`'s FE half — a bootstrap stand-in for
-the npm package until the SDK's first release tag exists (`conventions.md` §5).
+`@turnbase-platform/gdk` is the `npm pack` tarball attached to the `turnbase-sdk` `v0.1.0` GitHub Release,
+depended on by URL (ADR-0022).
 
 ## Layout
 
